@@ -2,16 +2,22 @@ import re
 from collections import Counter
 from pathlib import Path
 
-WORD_PATTERN = re.compile(r"\b[\w']+\b", re.UNICODE)
+WORD_PATTERN = re.compile(r"[A-Za-z0-9]+(?:['\u2019][A-Za-z0-9]+)?")
 SENTENCE_ENDING_PATTERN = re.compile(r"[.!?]+")
 PARAGRAPH_SEPARATOR_PATTERN = re.compile(r"(?:\r?\n){2,}")
 
 
 def extract_words(text):
-    """Return a list of lowercased words found in the text."""
+    """Return a list of lowercase words found in the text."""
     if not text:
         return []
-    return [word.lower() for word in WORD_PATTERN.findall(text)]
+
+    return [word.replace("\u2019", "'").lower() for word in WORD_PATTERN.findall(text)]
+
+
+def word_length(word):
+    """Return the number of letters or digits in a word."""
+    return sum(character.isalnum() for character in word)
 
 
 def count_specific_word(text, word):
@@ -19,8 +25,12 @@ def count_specific_word(text, word):
     if not text or not word:
         return 0
 
-    pattern = re.compile(r"\b" + re.escape(word) + r"\b", re.IGNORECASE | re.UNICODE)
-    return len(pattern.findall(text))
+    search_words = extract_words(word)
+    if len(search_words) != 1:
+        return 0
+
+    search_word = search_words[0]
+    return sum(current_word == search_word for current_word in extract_words(text))
 
 
 def identify_most_common_word(text):
@@ -39,7 +49,7 @@ def calculate_average_word_length(text):
     if not words:
         return 0.0
 
-    total_length = sum(len(word) for word in words)
+    total_length = sum(word_length(word) for word in words)
     return total_length / len(words)
 
 
